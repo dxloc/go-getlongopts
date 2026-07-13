@@ -36,13 +36,9 @@ type Parser struct {
 	maxLongOptLength int
 }
 
-type cmdOpt struct {
-	key string
-	val string
-}
-
 var ErrUnknownOption = fmt.Errorf("unknown option")
 
+// Compare two 'LongOption's
 func (o LongOption) Compare(a, b LongOption) int {
 	if a.Short != b.Short {
 		return cmp.Compare(a.Short, b.Short)
@@ -51,6 +47,7 @@ func (o LongOption) Compare(a, b LongOption) int {
 	}
 }
 
+// Parse command line options and return the remaining arguments.
 func (p *Parser) Parse(args []string) ([]string, error) {
 	var key string
 
@@ -87,12 +84,13 @@ func (p *Parser) Parse(args []string) ([]string, error) {
 		}
 	}
 	if i < argc {
-		return os.Args[i:], nil
+		return args[i:], nil
 	} else {
 		return nil, nil
 	}
 }
 
+// Built-in bash-completion generator
 func (p *Parser) BashCompletion(progname string) string {
 	var s strings.Builder
 	var c strings.Builder
@@ -101,7 +99,9 @@ func (p *Parser) BashCompletion(progname string) string {
 	progname = ss[len(ss)-1]
 
 	s.WriteString("#!/bin/bash\n")
-	s.WriteString("_" + progname + "() {\n")
+	s.WriteString("_")
+	s.WriteString(progname)
+	s.WriteString("() {\n")
 	s.WriteString("    local cur prev words cword\n")
 	s.WriteString("    _init_completion || return\n")
 	s.WriteString("    case ${prev} in\n")
@@ -110,21 +110,25 @@ func (p *Parser) BashCompletion(progname string) string {
 			continue
 		}
 		if opt.Long != "" {
-			c.WriteString(" --" + opt.Long)
+			c.WriteString(" --")
+			c.WriteString(opt.Long)
 		} else if opt.Short != "" {
-			c.WriteString(" -" + opt.Short)
+			c.WriteString(" -")
+			c.WriteString(opt.Short)
 		}
 		switch opt.ArgType {
 		case ArgTypeDir:
 			s.WriteString("        ")
 			if opt.Short != "" {
-				s.WriteString("-" + opt.Short)
+				s.WriteString("-")
+				s.WriteString(opt.Short)
 				if opt.Long != "" {
 					s.WriteString("|")
 				}
 			}
 			if opt.Long != "" {
-				s.WriteString("--" + opt.Long)
+				s.WriteString("--")
+				s.WriteString(opt.Long)
 			}
 			s.WriteString(")\n")
 			s.WriteString("            COMPREPLY=( $(compgen -d -- ${cur}) )\n")
@@ -132,13 +136,15 @@ func (p *Parser) BashCompletion(progname string) string {
 		case ArgTypeFile:
 			s.WriteString("        ")
 			if opt.Short != "" {
-				s.WriteString("-" + opt.Short)
+				s.WriteString("-")
+				s.WriteString(opt.Short)
 				if opt.Long != "" {
 					s.WriteString("|")
 				}
 			}
 			if opt.Long != "" {
-				s.WriteString("--" + opt.Long)
+				s.WriteString("--")
+				s.WriteString(opt.Long)
 			}
 			s.WriteString(")\n")
 			s.WriteString("            COMPREPLY=( $(compgen -f -- ${cur}) )\n")
@@ -146,20 +152,29 @@ func (p *Parser) BashCompletion(progname string) string {
 		}
 	}
 	s.WriteString("        *)\n")
-	s.WriteString("            COMPREPLY=( $(compgen -W '" + c.String() + "' -- ${cur}) )\n")
+	s.WriteString("            COMPREPLY=( $(compgen -W '")
+	s.WriteString(c.String())
+	s.WriteString("' -- ${cur}) )\n")
 	s.WriteString("            ;;\n")
 	s.WriteString("    esac\n")
 	s.WriteString("} &&\n")
-	s.WriteString("    complete -o filenames -F _" + progname + " " + progname + "\n")
+	s.WriteString("    complete -o filenames -F _")
+	s.WriteString(progname)
+	s.WriteString(" ")
+	s.WriteString(progname)
+	s.WriteString("\n")
 	s.WriteString("# ex: ts=4 sw=4 et filetype=sh")
 
 	return s.String()
 }
 
+// Built-in help function
 func (p *Parser) Usage() string {
 	var s strings.Builder
 	s.WriteString("Usage:\n")
-	s.WriteString("  " + os.Args[0] + " [options]\n")
+	s.WriteString("  ")
+	s.WriteString(os.Args[0])
+	s.WriteString(" [options]\n")
 	s.WriteString("\n")
 	s.WriteString("Options:\n")
 	for _, opt := range p.opts {
@@ -168,7 +183,8 @@ func (p *Parser) Usage() string {
 		}
 		s.WriteString("  ")
 		if opt.Short != "" {
-			s.WriteString("-" + opt.Short)
+			s.WriteString("-")
+			s.WriteString(opt.Short)
 			if opt.Long != "" {
 				s.WriteString("|")
 			}
@@ -176,7 +192,8 @@ func (p *Parser) Usage() string {
 			s.WriteString("   ")
 		}
 		if opt.Long != "" {
-			s.WriteString("--" + opt.Long)
+			s.WriteString("--")
+			s.WriteString(opt.Long)
 		}
 
 		longLen := len(opt.Long)
@@ -193,6 +210,11 @@ func (p *Parser) Usage() string {
 	return s.String()
 }
 
+// Initialize and returns a new Parser with the given options from the 'opts' parameter.
+//
+// The new Parser is also initialized with the built-in bash-completion generator
+// (-b|--bash-completion) and (-h|--help) help options. Users can override the built-in
+// options by their own (-b), (--bash-completion), (-h), (--help) options.
 func NewParser(opts []LongOption) *Parser {
 	p := Parser{optTable: make(map[string]OptTableEntry)}
 	bashOpts := LongOption{
