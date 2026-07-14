@@ -17,7 +17,7 @@ const (
 )
 
 type OptSetFunc func(value string)
-type OptTableEntry struct {
+type optTableEntry struct {
 	typ   int
 	setFn OptSetFunc
 }
@@ -32,7 +32,7 @@ type LongOption struct {
 
 type Parser struct {
 	opts             []LongOption
-	optTable         map[string]OptTableEntry
+	optTable         map[string]optTableEntry
 	maxLongOptLength int
 }
 
@@ -216,7 +216,7 @@ func (p *Parser) Usage() string {
 // (-b|--bash-completion) and (-h|--help) help options. Users can override the built-in
 // options by their own (-b), (--bash-completion), (-h), (--help) options.
 func NewParser(opts []LongOption) *Parser {
-	p := Parser{optTable: make(map[string]OptTableEntry)}
+	p := Parser{optTable: make(map[string]optTableEntry)}
 	bashOpts := LongOption{
 		ArgType: ArgTypeNone,
 		Short:   "b",
@@ -254,13 +254,13 @@ func NewParser(opts []LongOption) *Parser {
 			helpOpts.Long = ""
 		}
 		if opt.Short != "" {
-			p.optTable[opt.Short] = OptTableEntry{
+			p.optTable[opt.Short] = optTableEntry{
 				typ:   opt.ArgType,
 				setFn: opt.SetFn,
 			}
 		}
 		if opt.Long != "" {
-			p.optTable[opt.Long] = OptTableEntry{
+			p.optTable[opt.Long] = optTableEntry{
 				typ:   opt.ArgType,
 				setFn: opt.SetFn,
 			}
@@ -271,25 +271,25 @@ func NewParser(opts []LongOption) *Parser {
 		}
 	}
 	if bashOpts.Short != "" {
-		p.optTable[bashOpts.Short] = OptTableEntry{
+		p.optTable[bashOpts.Short] = optTableEntry{
 			typ:   bashOpts.ArgType,
 			setFn: bashOpts.SetFn,
 		}
 	}
 	if bashOpts.Long != "" {
-		p.optTable[bashOpts.Long] = OptTableEntry{
+		p.optTable[bashOpts.Long] = optTableEntry{
 			typ:   bashOpts.ArgType,
 			setFn: bashOpts.SetFn,
 		}
 	}
 	if helpOpts.Short != "" {
-		p.optTable[helpOpts.Short] = OptTableEntry{
+		p.optTable[helpOpts.Short] = optTableEntry{
 			typ:   helpOpts.ArgType,
 			setFn: helpOpts.SetFn,
 		}
 	}
 	if helpOpts.Long != "" {
-		p.optTable[helpOpts.Long] = OptTableEntry{
+		p.optTable[helpOpts.Long] = optTableEntry{
 			typ:   helpOpts.ArgType,
 			setFn: helpOpts.SetFn,
 		}
